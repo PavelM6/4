@@ -1,2 +1,35 @@
-43
-шгг
+import requests
+from flask import Flask, render_template, request
+import psycopg2
+
+app = Flask(__name__)
+
+conn = psycopg2.connect(database="pqs", user="pavel", password="12345678", host="localhost", port="5432")
+
+cursor = conn.cursor()
+
+@app.route('/login/', methods=['GET'])
+def index():
+    return render_template('login.html')
+
+
+@app.route('/login/', methods=['POST'])
+def login():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    cursor.execute("SELECT * FROM service.users WHERE login=%s AND password=%s", (str(username), str(password)))
+    records = list(cursor.fetchall())
+
+    try:
+        cursor.execute("SELECT * FROM service.users WHERE login=%s AND password=%s", (str(username), str(password)))
+        records = list(cursor.fetchall())
+    except psycopg2.Error as e:
+        # Обработка ошибки
+        print("Error executing SQL query:", e)
+        conn.rollback()  # Откат транзакции
+        return render_template('error.html')  # Отобразить страницу с ошибкой пользователю
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
